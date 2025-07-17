@@ -13,7 +13,7 @@ struct Variable {
 };
 unordered_map<string, Variable> memory;
 
-vector<string> parser(string input) { // divide into words;
+vector<string> parser(string input) {
   vector<string> args;
   stringstream iss(input);
   string token;
@@ -154,9 +154,9 @@ int main() {
     string input;
     getline(cin,input);
     if (input=="exit") return 0;
-    // say x is number 5  // spaces are important;
+
     vector<string> tokens=parser(input);
-    //Number declaration
+
     if (tokens[0]=="say") {
       definefunc(tokens);
     }
