@@ -6,14 +6,14 @@ using namespace std;
 
 
 struct Variable {
-  string type;
-  string strval;
-  int numval;
+  string type=" ";
+  string strval=" ";
+  int numval=0;
 
 };
 unordered_map<string, Variable> memory;
 
-vector<string> parser(string input) {
+vector<string> parser(const string& input) {
   vector<string> args;
   stringstream iss(input);
   string token;
@@ -23,20 +23,20 @@ vector<string> parser(string input) {
   return args;
 }
 
-bool inMemory(string var) {
+bool inMemory(const string& var) {
   return memory.count(var);
 }
-bool isValidName(string var) {
-  return !(isdigit(var[0]));
+bool isValidName(const string& var) {
+  return !var.empty() && !isdigit(var[0]);
 }
 
-bool isNumber(string var) {
+bool isNumber(const string& var) {
   return inMemory(var) && memory[var].type=="number";
 }
-bool isString(string var) {
+bool isString(const string& var) {
   return inMemory(var) && memory[var].type=="string";
 }
-bool isValidNumber(string a,string b) {
+bool isValidNumber(const string& a,const string& b) {
   if (!inMemory(a)) {
     cout<<"Variable "<<a<<" Not defined";
     return false;
@@ -51,7 +51,7 @@ bool isValidNumber(string a,string b) {
   }
   return true;
 }
-bool isValidString(string a,string b) {
+bool isValidString(const string& a,const string& b) {
   if (!inMemory(a)) {
     cout<<"Variable "<<a<<" Not defined";
     return false;
@@ -66,17 +66,16 @@ bool isValidString(string a,string b) {
   }
   return true;
 }
-void definefunc(vector<string> tokens) {
+void definefunc(const vector<string> &tokens) {
   if (tokens.size()<5 || tokens[2]!="is") {
     cout<<"Syntax Error: say <var> is <type> <value>"<<endl;
     return;
   }
-  string var=tokens[1];
-  string type=tokens[3];
-  string value=tokens[4];
+  const string& var=tokens[1];
+  const string& type=tokens[3];
 
   if (!isValidName(var)) {
-    cout<<"Variable name cannot start with a digit"<<endl;
+    cout<<"Invalid variable name"<<endl;
     return;
   }
   if (inMemory(var)) {
@@ -87,9 +86,15 @@ void definefunc(vector<string> tokens) {
   Variable v;
   v.type=type;
   if (type=="number") {
+    const string& value=tokens[4];
     v.numval=stoi(value);
   }
   else if (type=="string") {
+    string value=" ";
+    for (int i=4;i<tokens.size();i++) {
+      value+=tokens[i];
+      if (i!=tokens.size()-1)value+=" ";
+    }
           v.strval=value;
   }
   else {
@@ -97,56 +102,85 @@ void definefunc(vector<string> tokens) {
         }
   memory[var]=v;
 }
-void printfunc(vector<string> tokens) {
+void printfunc(const vector<string> &tokens) {
   if (tokens.size()<2 ) {
     cout<<"Syntax Error: print <var>"<<endl;
     return;
   }
-  string var=tokens[1];
+  const string& var=tokens[1];
   if (!inMemory(var)) {
     cout<<"Variable might not have been initialized"<<endl;
     return;
   }
   if (isNumber(var)) {
     cout<<memory[var].numval<<endl;
-    return;
   }
   else if (isString(var)) {
     cout<<memory[var].strval<<endl;
-    return;
   }
 }
-void sumfunc(vector<string> tokens) {
+void sumfunc(const vector<string> &tokens) {
   if (tokens.size()<3) {
     cout<<"Syntax Error: sum <var1> <var2>"<<endl;
     return;
   }
-  string a=tokens[1];
-  string b=tokens[2];
+
+  const string& a=tokens[1];
+  const string& b=tokens[2];
   if (!isValidNumber(a,b)) return;
   cout<<memory[a].numval+memory[b].numval<<endl;
-  return;
 }
-void subfunc(vector<string> tokens) {
+void subfunc(const vector<string> &tokens) {
   if (tokens.size()<3) {
     cout<<"Syntax Error: sub <var1> <var2>"<<endl;
     return;
   }
-  string a=tokens[1];
-  string b=tokens[2];
+  const string& a=tokens[1];
+  const string& b=tokens[2];
   if (!isValidNumber(a,b)) return;
   cout<<memory[b].numval-memory[a].numval<<endl;
-  return;
 }
-void concatfunc(vector<string> tokens){
+void concatfunc(const vector<string> &tokens){
   if (tokens.size()<3) {
     cout<<"Syntax Error: concat <var1> <var2>"<<endl;
     return;
   }
-  string a=tokens[1];
-  string b=tokens[2];
+  const string& a=tokens[1];
+  const string& b=tokens[2];
   if (!isValidString(a,b)) return;
   cout<<memory[a].strval+memory[b].strval<<endl;
+}
+void assignFunc(const vector<string> &tokens){
+    if(tokens.size()<3){
+        cout<<"Syntax Error: assign <var1> <var2>"<<endl;
+        return;
+    }
+    const string& source=tokens[1];
+    const string& target=tokens[2];
+    if(!inMemory(source)) {
+        cout<<"Variable "<<source<<" not defined"<<endl;
+        return;
+    }
+    if(!isValidName(target)){
+         cout<<"Invalid variable name"<<endl;
+        return;
+    }
+      Variable v=memory[source];
+      memory[target]=v;
+    }
+void erasefunc(const vector<string>& tokens) {
+  if (tokens.size()<2) {
+    cout<<"Syntax Error: erase <var>"<<endl;
+  }
+  if (inMemory(tokens[1])) {
+    const string& var=tokens[1];
+    memory.erase(var);
+    cout<<"Variable "<<var<<" Deleted"<<endl;
+  }
+  else {
+    const string& var=tokens[1];
+    cout<<"Variable "<<var<<" does not exist"<<endl;
+  }
 }
 int main() {
   cout<<"Write a line of code"<<endl;
@@ -156,6 +190,8 @@ int main() {
     if (input=="exit") return 0;
 
     vector<string> tokens=parser(input);
+
+    if(tokens.empty()) continue;
 
     if (tokens[0]=="say") {
       definefunc(tokens);
@@ -171,6 +207,12 @@ int main() {
     }
     else if (tokens[0]=="concat") {
       concatfunc(tokens);
+    }
+    else if (tokens[0]=="assign"){
+        assignFunc(tokens);
+    }
+    else if (tokens[0]=="erase") {
+        erasefunc(tokens);
     }
   }
 }
